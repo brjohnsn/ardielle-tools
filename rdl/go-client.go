@@ -6,11 +6,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
 type clientGenerator struct {
@@ -158,6 +159,21 @@ func (client {{client}}) addAuthHeader(req *http.Request) {
 			req.Header.Add(*client.CredsHeader, *client.CredsToken)
 		}
 	}
+}
+
+func (client {{client}}) httpHead(url string, headers map[string]string) (*http.Response, error) {
+	hclient := client.getClient()
+	req, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	client.addAuthHeader(req)
+	if headers != nil {
+		for k, v := range headers {
+			req.Header.Add(k, v)
+		}
+	}
+	return hclient.Do(req)
 }
 
 func (client {{client}}) httpGet(url string, headers map[string]string) (*http.Response, error) {
@@ -401,7 +417,7 @@ func (gen *clientGenerator) emitClient() error {
 }
 
 func goMethodSignature(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) string {
-	noContent := r.Expected == "NO_CONTENT" && r.Alternatives == nil
+	noContent := resourceReturnsNoContent(r)
 	returnSpec := "error"
 	//fixme: no content *with* output headers
 	if !noContent {
@@ -505,7 +521,7 @@ func goMethodBody(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) string {
 	dataDef := fmt.Sprintf("var data %s", rtype)
 	errorReturn := "return data, err"
 	dataReturn := "return data, nil"
-	noContent := r.Expected == "NO_CONTENT" && r.Alternatives == nil
+	noContent := resourceReturnsNoContent(r)
 	if noContent {
 		errorReturn = "return err"
 		dataReturn = "return nil"
@@ -548,7 +564,7 @@ func goMethodBody(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) string {
 	method := capitalize(strings.ToLower(r.Method))
 	assign := ":="
 	switch method {
-	case "Get", "Delete":
+	case "Get", "Delete", "Head":
 		s += "\tresp, err := client.http" + method + "(" + httpArg + ")\n"
 	case "Put", "Post", "Patch":
 		bodyParam := ""
@@ -593,7 +609,7 @@ func goMethodBody(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) string {
 	//loop for all expected results
 	var expected []string
 	expected = append(expected, rdl.StatusCode(r.Expected))
-	couldBeNoContent := "NO_CONTENT" == r.Expected
+	couldBeNoContent := resourceReturnsNoContent(r)
 	couldBeNotModified := "NOT_MODIFIED" == r.Expected
 	for _, e := range r.Alternatives {
 		if "NO_CONTENT" == e {

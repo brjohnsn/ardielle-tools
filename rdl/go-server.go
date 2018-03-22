@@ -6,11 +6,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
 	"log"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
 type serverGenerator struct {
@@ -425,7 +426,7 @@ func goHandlerBody(reg rdl.TypeRegistry, name string, r *rdl.Resource, precise b
 	for _, v := range r.Outputs {
 		outHeaders += ", " + string(v.Name)
 	}
-	noContent := r.Expected == "NO_CONTENT" && len(r.Alternatives) == 0
+	noContent := resourceReturnsNoContent(r)
 	if noContent {
 		s += "\terr" + outHeaders + " := adaptor.impl." + capitalize(methName) + "(context" + sargs + ")\n"
 	} else {
@@ -460,7 +461,7 @@ func goHandlerBody(reg rdl.TypeRegistry, name string, r *rdl.Resource, precise b
 		}
 	}
 	if noContent { //other non-content responses?
-		s += fmt.Sprintf("\t\twriter.WriteHeader(204)\n")
+		s += fmt.Sprintf("\t\twriter.WriteHeader(%s)\n", rdl.StatusCode(r.Expected))
 	} else {
 		//fixme: handle alternative responses. How deos the handler pass them back?
 		s += fmt.Sprintf("\t\trdl.JSONResponse(writer, %s, data)\n", rdl.StatusCode(r.Expected))
@@ -568,7 +569,7 @@ func goHandlerSignature(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) str
 }
 
 func goServerMethodSignature(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) string {
-	noContent := r.Expected == "NO_CONTENT" && r.Alternatives == nil
+	noContent := resourceReturnsNoContent(r)
 	returnSpec := "error"
 	if !noContent {
 		gtype := goType(reg, r.Type, false, "", "", precise, true)

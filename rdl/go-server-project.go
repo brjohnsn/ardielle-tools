@@ -146,7 +146,7 @@ func GenerateGoDaemonMain(banner string, schema *rdl.Schema, outdir string, ns s
 }
 
 func goMethodSignatureImpl(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) string {
-	noContent := r.Expected == "NO_CONTENT" && r.Alternatives == nil
+	noContent := resourceReturnsNoContent(r)
 	returnSpec := "error"
 	//fixme: no content *with* output headers
 	if !noContent {
@@ -169,7 +169,7 @@ func goMethodSignatureImpl(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) 
 }
 
 func goMethodBodyImpl(reg rdl.TypeRegistry, r *rdl.Resource, precise bool) string {
-	noContent := r.Expected == "NO_CONTENT" && r.Alternatives == nil
+	noContent := resourceReturnsNoContent(r)
 	methName, params := goMethodName2(reg, r, precise, "")
 	args := make([]string, 0)
 	slots := ""

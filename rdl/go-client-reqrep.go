@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
 	"go/format"
 	"strings"
 	"text/template"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
 type reqRepClientGenerator struct {
@@ -591,7 +592,7 @@ func (rr *reqRepClientGenerator) convertResource(reg rdl.TypeRegistry, r *rdl.Re
 			}
 		}
 	}
-	noContent := r.Expected == "NO_CONTENT" && r.Alternatives == nil
+	noContent := resourceReturnsNoContent(r)
 	if !noContent {
 		method.Outputs = append(method.Outputs, &reqRepVar{
 			Name:     "Body",

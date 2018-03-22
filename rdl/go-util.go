@@ -7,12 +7,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
 //default imports for go code generation. Gets rewritten when vendoring.
@@ -231,4 +232,8 @@ const utilTemplate = `
 
 func goFmt(filename string) error {
 	return exec.Command("go", "fmt", filename).Run()
+}
+
+func resourceReturnsNoContent(r *rdl.Resource) bool {
+	return r.Method == "HEAD" || r.Expected == "NO_CONTENT" && len(r.Alternatives) == 0
 }
