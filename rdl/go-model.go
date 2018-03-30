@@ -32,6 +32,30 @@ type modelGenerator struct {
 	rdl            bool
 }
 
+func hasAnnotation(t *rdl.Type, key rdl.ExtendedAnnotation) bool {
+	switch t.Variant {
+	case rdl.TypeVariantAliasTypeDef:
+		return t.AliasTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantStringTypeDef:
+		return t.StringTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantNumberTypeDef:
+		return t.NumberTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantArrayTypeDef:
+		return t.ArrayTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantMapTypeDef:
+		return t.MapTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantStructTypeDef:
+		return t.StructTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantBytesTypeDef:
+		return t.BytesTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantEnumTypeDef:
+		return t.EnumTypeDef.Annotations[key] != ""
+	case rdl.TypeVariantUnionTypeDef:
+		return t.UnionTypeDef.Annotations[key] != ""
+	}
+	return false
+}
+
 // GenerateGoModel generates the model code for the types defined in the RDL schema.
 func GenerateGoModel(opts *generateOptions) error {
 	schema := opts.schema
@@ -70,6 +94,9 @@ func GenerateGoModel(opts *generateOptions) error {
 	gen.emitHeader(banner)
 	if gen.err == nil {
 		for _, t := range schema.Types {
+			if hasAnnotation(t, "x_used_from") {
+				continue
+			}
 			gen.emitType(t)
 		}
 	}
